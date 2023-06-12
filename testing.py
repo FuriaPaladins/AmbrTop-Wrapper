@@ -22,16 +22,17 @@ async def main():
     all_weapons = await time_function(api.get_full_weapons)
     events = await time_function(api.get_events)
 
+    print(await api.get_character(10000002))
     await api.close()
 
 
-    for event in events:
-        event: Event
-        print(event.en.short_name)
-        print(event.en.banner)
-        # read and pretty print the HTML from event.en.description
-        print(event.en.parsed_description.reward_image)
-        print(f"Event Starts: {event.en.parsed_description.start_time} | Event Ends: {event.en.parsed_description.end_time}")
-        print(event.en.parsed_description.description)
-        print()
+    #for event in events:
+    #    event: Event
+    #    print(event.en.short_name)
+    #    print(event.en.banner)
+    #    # read and pretty print the HTML from event.en.description
+     #   print(event.en.parsed_description.reward_image)
+     #   print(f"Event Starts: {event.en.parsed_description.start_time} | Event Ends: {event.en.parsed_description.end_time}")
+    #    print(event.en.parsed_description.description)
+     #   print()
 asyncio.run(main())
