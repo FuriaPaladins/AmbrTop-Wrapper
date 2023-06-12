@@ -4,14 +4,14 @@ import ambrtop_py.api_requests
 from ambrtop_py.api_requests import APIRequests
 from ambrtop_py.classes.avatar import SmallAvatar, Avatar
 from ambrtop_py.classes.misc import DailyDungeons, Event
-from ambrtop_py.classes.weapon import WeaponTypes
+from ambrtop_py.classes.weapon import SmallWeapon, Weapon
 
 
 class AmbrAPI(APIRequests):
     def __init__(self, **kwargs):
         super().__init__(requests_cache=f"{os.path.dirname(ambrtop_py.api_requests.__file__)}/cache", **kwargs)
 
-        self.weapon_types = None
+        self.weapon_data = None
 
     async def get_characters(self) -> list[SmallAvatar]:
         """
@@ -20,9 +20,10 @@ class AmbrAPI(APIRequests):
         :return: List of SmallAvatar objects
         """
         _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/avatar')
-        self.weapon_types = WeaponTypes.from_dict(_req_['types'])
+        if self.weapon_data is None:
+            self.weapon_data = await self.__get_manual_weapon__()
 
-        return [SmallAvatar.from_dict(_req_['items'][i], self.weapon_types) for i in _req_['items']]
+        return [SmallAvatar.from_dict(_req_['items'][i], self.weapon_data) for i in _req_['items']]
 
     async def get_full_characters(self) -> list[Avatar]:
         """
@@ -31,9 +32,11 @@ class AmbrAPI(APIRequests):
         :return: List of Avatar objects
         """
         _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/avatar')
-        self.weapon_types = WeaponTypes.from_dict(_req_['types'])
-        _reqs_ = await self.__make_request__([f'{self.__base_url__}/{self.__language__}/avatar/{i}' for i in _req_['items']])
-        return [Avatar.from_dict(i, self.weapon_types) for i in _reqs_]
+        if self.weapon_data is None:
+            self.weapon_data = await self.__get_manual_weapon__()
+        _reqs_ = await self.__make_request__(
+            [f'{self.__base_url__}/{self.__language__}/avatar/{i}' for i in _req_['items']])
+        return [Avatar.from_dict(i, self.weapon_data) for i in _reqs_]
 
     async def get_character(self, character_id: int) -> Avatar:
         """
@@ -42,9 +45,29 @@ class AmbrAPI(APIRequests):
         :return: Avatar object
         """
         _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/avatar/{character_id}')
-        return Avatar.from_dict(_req_, self.weapon_types)
+        if self.weapon_data is None:
+            self.weapon_data = await self.__get_manual_weapon__()
+        return Avatar.from_dict(_req_, self.weapon_data)
 
-    async def 
+    async def get_weapons(self) -> list[SmallWeapon]:
+        """
+        Get all weapons from the weapon endpoint
+        :return: List of SmallWeapon objects
+        """
+        _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/weapon')
+        if self.weapon_data is None:
+            self.weapon_data = await self.__get_manual_weapon__()
+        return [SmallWeapon.from_dict(_req_['items'][i], self.weapon_data) for i in _req_['items']]
+
+    async def get_full_weapons(self) -> list[Weapon]:
+        """
+        Get all expanded weapons from the weapon endpoint
+        :return: List of Weapon objects
+        """
+        _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/weapon')
+        _reqs_ = await self.__make_request__(
+            [f'{self.__base_url__}/{self.__language__}/weapon/{i}' for i in _req_['items']])
+        return [Weapon.from_dict(i) for i in _reqs_]
 
     async def get_daily_dungeon(self) -> DailyDungeons:
         """
@@ -61,3 +84,21 @@ class AmbrAPI(APIRequests):
         """
         _req_ = await self.__make_request__(f'https://api.ambr.top/assets/data/event.json')
         return [Event.from_dict(_req_[i]) for i in _req_]
+
+    async def __get_manual_weapon__(self) -> dict:
+        """
+        Get the weapon data from the manual endpoint
+        :return:
+        """
+        return await self.__make_request__(f'https://api.ambr.top/v2/{self.__language__}/manualWeapon')
+
+    async def fill_cache(self):
+        """
+        Fill the cache with all data initially so that subsequent requests are faster
+        :return: self
+        """
+        await self.get_full_characters()
+        await self.get_full_weapons()
+        await self.get_daily_dungeon()
+        await self.get_events()
+        return self

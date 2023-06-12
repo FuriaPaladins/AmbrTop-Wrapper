@@ -1,36 +1,63 @@
 from dataclasses import dataclass
 
 from ambrtop_py.classes._functions import *
+from ambrtop_py.classes.misc import AscensionItem
 
 
 @dataclass
-class WeaponTypes:
-    weapon_sword_one_hand: Optional[str] = None
-    weapon_claymore: Optional[str] = None
-    weapon_bow: Optional[str] = None
-    weapon_pole: Optional[str] = None
-    weapon_catalyst: Optional[str] = None
+class SmallWeapon:
+    id: Optional[int] = None
+    rarity: Optional[int] = None
+    type: Optional[str] = None
+    name: Optional[str] = None
+    icon: Optional[str] = None
+    route: Optional[str] = None
 
     @staticmethod
-    def from_dict(obj: Any) -> 'WeaponTypes':
+    def from_dict(obj: Any, weapon_types: dict = None) -> 'SmallWeapon':
         assert isinstance(obj, dict)
-        weapon_sword_one_hand = from_union([from_str, from_none], obj.get("WEAPON_SWORD_ONE_HAND"))
-        weapon_claymore = from_union([from_str, from_none], obj.get("WEAPON_CLAYMORE"))
-        weapon_bow = from_union([from_str, from_none], obj.get("WEAPON_BOW"))
-        weapon_pole = from_union([from_str, from_none], obj.get("WEAPON_POLE"))
-        weapon_catalyst = from_union([from_str, from_none], obj.get("WEAPON_CATALYST"))
-        return WeaponTypes(weapon_sword_one_hand, weapon_claymore, weapon_bow, weapon_pole, weapon_catalyst)
+        id = obj.get("id", None)
+        rarity = obj.get("rank", None)
+        type = weapon_types.get(obj.get("weaponType", None), None) if weapon_types else obj.get("weaponType", None)
+        name = obj.get("name", None)
+        icon = f"https://api.ambr.top/assets/UI/{obj.get('icon', None)}.png"
+        route = obj.get("route", None)
+        return SmallWeapon(id, rarity, type, name, icon, route)
 
-    def to_dict(self) -> dict:
-        result: dict = {}
-        if self.weapon_sword_one_hand is not None:
-            result["WEAPON_SWORD_ONE_HAND"] = from_union([from_str, from_none], self.weapon_sword_one_hand)
-        if self.weapon_claymore is not None:
-            result["WEAPON_CLAYMORE"] = from_union([from_str, from_none], self.weapon_claymore)
-        if self.weapon_bow is not None:
-            result["WEAPON_BOW"] = from_union([from_str, from_none], self.weapon_bow)
-        if self.weapon_pole is not None:
-            result["WEAPON_POLE"] = from_union([from_str, from_none], self.weapon_pole)
-        if self.weapon_catalyst is not None:
-            result["WEAPON_CATALYST"] = from_union([from_str, from_none], self.weapon_catalyst)
-        return result
+
+@dataclass
+class WeaponEffect:
+    name: Optional[str] = None
+    levels: Optional[list[str]] = None
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'WeaponEffect':
+        assert isinstance(obj, dict)
+        name = obj.get("name", None)
+        __level_data__ = obj.get("upgrade", None)
+        levels = [__level_data__[i] for i in __level_data__]
+        return WeaponEffect(name, levels)
+
+
+@dataclass
+class Weapon(SmallWeapon):
+    story_id: Optional[int] = None
+    effect: Optional[WeaponEffect] = None
+    description: Optional[str] = None
+    ascension: Optional[list[AscensionItem]] = None
+
+    @staticmethod
+    def from_dict(obj: Any, weapon_types: dict = None) -> 'Weapon':
+        assert isinstance(obj, dict)
+        id = obj.get("id", None)
+        rarity = obj.get("rank", None)
+        type = weapon_types.get(obj.get("weaponType", None), None) if weapon_types else obj.get("weaponType", None)
+        name = obj.get("name", None)
+        icon = f"https://api.ambr.top/assets/UI/{obj.get('icon', None)}.png"
+        route = obj.get("route", None)
+        story_id = obj.get("storyId", None)
+        effect = WeaponEffect.from_dict([obj.get("affix", None)[i] for i in obj.get("affix", None)][0]) if obj.get("affix", None) else None
+        description = obj.get("description", None)
+        ascension = [AscensionItem(int(key), int(item)) for key, item in obj.get("ascension", []).items()] if obj.get(
+            "ascension") else None
+        return Weapon(id, rarity, type, name, icon, route, story_id, effect, description, ascension)

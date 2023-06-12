@@ -7,5 +7,5 @@ setup(name='ambrtop',
       description='Python Distribution Utilities',
       author='Furiã',
       packages=['aiohttp_client_cache', 'aiohttps', 'aiosqlite'],
-      package_dir={'': 'src'},
+      package_dir={'': 'ambrtop_py'},
 )

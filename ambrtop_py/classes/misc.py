@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import bs4
+
 from ambrtop_py.classes._functions import *
 import datetime
 
@@ -69,12 +71,50 @@ class DailyDungeons:
     def get_day(self, day: datetime.datetime):
         return list(self)[day.weekday()]
 
+
+@dataclass
+class ParsedEventDescription:
+    reward_image: Optional[str] = None
+    start_time: Optional[datetime.datetime] = None
+    end_time: Optional[datetime.datetime] = None
+    description: Optional[list[str]] = None
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'ParsedEventDescription':
+        soup_d = bs4.BeautifulSoup(obj, "lxml")
+        reward_image = soup_d.find("img").get('src') if soup_d.find("img") else None
+        __times__ = soup_d.find_all("t")
+        if len(__times__) >= 2:
+            start_time = datetime.datetime.strptime(__times__[0].text, "%Y/%m/%d %H:%M:%S") if __times__[0] else None
+            end_time = datetime.datetime.strptime(__times__[1].text, "%Y/%m/%d %H:%M:%S") if __times__[1] else None
+        elif len(__times__) == 1:
+            end_time = datetime.datetime.strptime(__times__[0].text, "%Y/%m/%d %H:%M:%S") if __times__[0] else None
+            start_time = None
+        else:
+            start_time = None
+            end_time = None
+        ## Remove the first 6 <p> tags
+        for _ in range(6):
+            soup_d.p.decompose()
+        ## Split lines by <p> tags
+        description = [x.text for x in soup_d.find_all("p")]
+        # Remove \xa0 and '' from list
+        description = [x.replace('\xa0', '') for x in description if x != '\xa0' and x != '']
+        ## Remove any \xa0's in each line
+
+        return ParsedEventDescription(reward_image, start_time, end_time, description)
+
+
 @dataclass
 class EventLang:
     short_name: Optional[str] = None
     full_name: Optional[str] = None
     description: Optional[str] = None
     banner: Optional[str] = None
+    parsed_description: Optional[ParsedEventDescription] = None
+
+    def __post_init__(self):
+        self.parsed_description = ParsedEventDescription.from_dict(self.description)
 
 
 @dataclass
@@ -108,3 +148,15 @@ class Event:
         jp = EventLang(__name__.get("JP", None), __name_full__.get("JP", None), __description__.get("JP", None), __banner__.get("JP", None))
 
         return Event(id, ends, en, ru, chs, cht, kr, jp)
+
+
+@dataclass
+class AscensionItem:
+    id: Optional[int] = None
+    level: Optional[int] = None
+
+    @staticmethod
+    def from_dict(obj: Any) -> 'AscensionItem':
+        id = int(obj[0])
+        level = int(obj[1])
+        return AscensionItem(id, level)

@@ -4,7 +4,7 @@ import re
 from ambrtop_py.api_requests import APIRequests
 from ambrtop_py.classes._functions import *
 from ambrtop_py.classes.food import SmallFood
-from ambrtop_py.classes.weapon import WeaponTypes
+from ambrtop_py.classes.misc import AscensionItem
 from ambrtop_py.classes.namecard import Namecard
 
 
@@ -22,14 +22,13 @@ class SmallAvatar:
     route: Optional[str] = None
 
     @staticmethod
-    def from_dict(obj: Any, weapon_types: WeaponTypes = None) -> 'SmallAvatar':
+    def from_dict(obj: Any, weapon_types: dict = None) -> 'SmallAvatar':
         assert isinstance(obj, dict)
         id = obj.get("id", None)
         rarity = obj.get("rank", None)
         name = obj.get("name", None)
         element = obj.get("element", None)
-        weapon_type = getattr(weapon_types, obj.get("weaponType", None).lower()) if weapon_types else obj.get(
-            "weaponType", None)
+        weapon_type = weapon_types.get(obj.get("weaponType", None), None) if weapon_types else obj.get("weaponType", None)
         icon = f"https://api.ambr.top/assets/UI/{obj.get('icon')}.png"
         icon_gacha = f"https://api.ambr.top/assets/UI/{obj.get('icon').replace('UI_AvatarIcon', 'UI_Gacha_AvatarImg')}.png" if obj.get(
             "icon", None) else None
@@ -114,18 +113,6 @@ class Other:
         name_card = Namecard.from_dict(obj.get("nameCard", None)) if obj.get("nameCard", None) else None
         special_dish = SmallFood.from_dict(obj.get("specialFood", None)) if obj.get("specialFood", None) else None
         return Other(costumes, furniture_id, name_card, special_dish)
-
-
-@dataclass
-class AscensionItem:
-    id: Optional[int] = None
-    level: Optional[int] = None
-
-    @staticmethod
-    def from_dict(obj: Any) -> 'AscensionItem':
-        id = int(obj[0])
-        level = int(obj[1])
-        return AscensionItem(id, level)
 
 
 @dataclass
@@ -217,6 +204,21 @@ class AvatarTalent:
             "promote", None) else None
         return AvatarTalent(type, name, description, icon, cooldown, cost, levels)
 
+    def get_total_mora_cost(self, start_level=1, end_level=10) -> int:
+        """
+        Gets the total mora cost of leveling up the talent from start_level to end_level
+        :param start_level: level to start counting from
+        :param end_level: level to stop counting at
+        :return: total mora cost
+        """
+        if self.levels is None:
+            return 0
+        total_mora_cost = 0
+        for level in self.levels:
+            if start_level <= level.level <= end_level:
+                total_mora_cost += level.cost_mora if level.cost_mora else 0
+        return total_mora_cost
+
 
 @dataclass
 class ExtraConstellationTalentLevel:
@@ -272,14 +274,13 @@ class Avatar(SmallAvatar):
     constellations: Optional[List[Constellation]] = None
 
     @staticmethod
-    def from_dict(obj: Any, weapon_types: WeaponTypes = None, requests_cache: APIRequests = None) -> 'Avatar':
+    def from_dict(obj: Any, weapon_types: dict = None) -> 'Avatar':
         assert isinstance(obj, dict)
         id = obj.get("id", None)
         rarity = obj.get("rank", None)
         name = obj.get("name", None)
         element = obj.get("element", None)
-        weapon_type = getattr(weapon_types, obj.get("weaponType", None).lower()) if weapon_types else obj.get(
-            "weaponType", None)
+        weapon_type = weapon_types.get(obj.get("weaponType", None).replace('WEAPON_SWORD_ONE_HAND', 'WEAPON_SWORD'), None) if weapon_types else None
         icon = f"https://api.ambr.top/assets/UI/{obj.get('icon')}.png"
         icon_gacha = f"https://api.ambr.top/assets/UI/{obj.get('icon').replace('UI_AvatarIcon', 'UI_Gacha_AvatarImg')}.png" if obj.get(
             "icon", None) else None

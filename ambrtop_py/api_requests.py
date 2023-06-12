@@ -17,9 +17,9 @@ class APIRequests:
         self.__req_cache__ = CachedSession(cache=SQLiteBackend(requests_cache, expire_after=expire_after))
         self.__base_url__ = "https://api.ambr.top/v2"
         self.__language__ = language
-        if self.__language__ not in ['en', 'zh', 'ko', 'jp']:
+        if self.__language__ not in ['en', 'zh', 'ko', 'jp', 'ru', 'de']:
             self.__req_cache__.close()
-            raise ValueError("Language must be one of the following: 'en', 'zh', 'ko', 'jp'")
+            raise ValueError("Language must be one of the following: 'en', 'zh', 'ko', 'jp', 'ru', 'de'")
 
     async def __make_request__(self, url: str | list[str]):
         if isinstance(url, list):
