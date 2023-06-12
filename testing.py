@@ -22,7 +22,7 @@ async def main():
     all_weapons = await time_function(api.get_full_weapons)
     events = await time_function(api.get_events)
 
-    print(await api.get_character(10000002))
+    print((await api.get_character(10000002)).fetter.title)
     await api.close()
 
 
