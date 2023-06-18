@@ -17,6 +17,8 @@ async def main():
     events = await api.get_events()
     for event in events:
         print(f"{event.en.full_name} ends @ {event.ends}")
+    
+    await api.close()
 
 asyncio.run(main())
 ```
