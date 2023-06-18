@@ -1,3 +1,4 @@
+import asyncio
 import os.path
 
 import ambrtop_py.api_requests
@@ -13,9 +14,11 @@ class AmbrAPI(APIRequests):
         super().__init__(requests_cache=f"{os.path.dirname(ambrtop_py.api_requests.__file__)}/cache", **kwargs)
 
         self.weapon_data = None
+        self.monster_types = None
+
         self.weapon_curve = None
         self.character_curve = None
-        self.monster_types = None
+        self.monster_curve = None
 
     async def get_characters(self) -> list[SmallAvatar]:
         """
@@ -45,8 +48,8 @@ class AmbrAPI(APIRequests):
             self.character_curve = await self.__get_character_curve__()
         if self.weapon_curve is None:
             self.weapon_curve = await self.__get_weapon_curve__()
-        _reqs_ = await self.__make_request__(
-            [f'{self.__base_url__}/{self.__language__}/avatar/{i}' for i in _req_['items']])
+
+        _reqs_ = await self.__make_request__([f'{self.__base_url__}/{self.__language__}/avatar/{i}' for i in _req_['items']])
         return [Avatar.from_dict(i, self.weapon_data) for i in _reqs_]
 
     async def get_character(self, character_id: int) -> Avatar:
@@ -80,8 +83,8 @@ class AmbrAPI(APIRequests):
         :return: List of Weapon objects
         """
         _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/weapon')
-        _reqs_ = await self.__make_request__(
-            [f'{self.__base_url__}/{self.__language__}/weapon/{i}' for i in _req_['items']])
+        _reqs_ = await self.__make_request__([f'{self.__base_url__}/{self.__language__}/weapon/{i}' for i in _req_['items']])
+
         return [Weapon.from_dict(i, self.weapon_data) for i in _reqs_]
 
     async def get_monsters(self):
@@ -92,7 +95,8 @@ class AmbrAPI(APIRequests):
         _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/monster')
         if self.monster_types is None:
             self.monster_types = _req_['types']
-
+        if self.monster_curve is None:
+            self.monster_curve = await self.__get_monster_curve__()
         return [SmallMonster.from_dict(_req_['items'][i], self.monster_types) for i in _req_['items']]
 
     async def get_full_monsters(self):
@@ -103,9 +107,13 @@ class AmbrAPI(APIRequests):
         _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/monster')
         if self.monster_types is None:
             self.monster_types = _req_['types']
-
+        if self.monster_curve is None:
+            self.monster_curve = await self.__get_monster_curve__()
         _reqs_ = await self.__make_request__(
             [f'{self.__base_url__}/{self.__language__}/monster/{i}' for i in _req_['items']])
+
+        _reqs_ = await self.__make_request__([f'{self.__base_url__}/{self.__language__}/monster/{i}' for i in _req_['items']])
+
         return [Monster.from_dict(i, self.monster_types) for i in _reqs_]
 
     async def get_daily_dungeon(self) -> DailyDungeons:
@@ -148,12 +156,21 @@ class AmbrAPI(APIRequests):
         _req_ = await self.__make_request__(f'https://api.ambr.top/v2/static/weaponCurve')
         return [UpgradeCurve.from_dict(_req_[i]) for i in _req_]
 
+    async def __get_monster_curve__(self):
+        """
+        Get the monster curve data from the static endpoint
+        :return:
+        """
+        _req_ = await self.__make_request__(f'https://api.ambr.top/v2/static/monsterCurve')
+        return [UpgradeCurve.from_dict(_req_[i]) for i in _req_]
+
     async def fill_cache(self):
         """
         Fill the cache with all data initially so that subsequent requests are faster
+        NOTE: This will take quite a while.
         :return: self
         """
-        await self.get_full_characters()
-        await self.get_full_weapons()
-        await self.get_daily_dungeon()
+        _tasks_ = [asyncio.create_task(i) for i in [self.get_full_characters(), self.get_full_weapons(), self.get_full_monsters(), self.get_daily_dungeon()]]
+        await asyncio.gather(*_tasks_)
+
         return self

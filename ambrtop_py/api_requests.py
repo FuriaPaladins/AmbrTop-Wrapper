@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import os
+import random
 
 from aiohttp_client_cache import CachedSession, SQLiteBackend
 
@@ -25,22 +26,12 @@ class APIRequests:
         if isinstance(url, list):
             responses = []
             for url in url:
-                if cache is not True:
-                    await self.__req_cache__.cache.delete_url(url)
-                    if self.__is_debug__:
-                        await async_print(f"{datetime.datetime.now()} DEBUG Cleared Cache for: '{url}'")
-                async with self.__req_cache__.get(url) as resp:
-                    if self.__is_debug__:
-                        await async_print(f"{datetime.datetime.now()} DEBUG Requesting: '{url}'")
-                    res = await resp.json()
-                    if res.get('response') is not None:
-                        if res['response'] != 200:
-                            raise ValueError(f"Error {res['response']} for {url}")
-                        responses.append(res['data'])
-                    else:
-                        responses.append(res)
+                responses.append(await self.__make_individual_request__(url, cache=cache))
             return responses
+        else:
+            return await self.__make_individual_request__(url, cache=cache)
 
+    async def __make_individual_request__(self, url: str, cache=True):
         if cache is not True:
             await self.__req_cache__.cache.delete_url(url)
             if self.__is_debug__:
@@ -49,6 +40,7 @@ class APIRequests:
             if self.__is_debug__:
                 await async_print(f"{datetime.datetime.now()} DEBUG Requesting: '{url}'")
             res = await resp.json()
+
             if res.get('response') is not None:
                 if res['response'] != 200:
                     raise ValueError(f"Error {res['response']} for {url}")
@@ -61,7 +53,8 @@ class APIRequests:
         Clear the cache
         :return:
         """
-        await async_print(f"{datetime.datetime.now()} DEBUG Clearing cache...")
+        if self.__is_debug__:
+            await async_print(f"{datetime.datetime.now()} DEBUG Clearing cache...")
         await self.__req_cache__.cache.clear()
 
     async def close(self):
