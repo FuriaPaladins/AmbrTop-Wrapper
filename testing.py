@@ -5,7 +5,8 @@ from rich import print
 import bs4
 import html_to_json
 
-async def time_function(func, *args, **kwargs) -> any:
+
+async def time_function(func, *args, **kwargs):
     start_time = time.time()
     func_return = await func(*args, **kwargs)
     print(f"Function {func.__name__} {time.time() - start_time} seconds")
@@ -22,17 +23,18 @@ async def main():
     all_weapons = await time_function(api.get_full_weapons)
     events = await time_function(api.get_events)
 
-    print((await api.get_character(10000002)).fetter.title)
+    print(all_characters[0])
     await api.close()
 
-
-    #for event in events:
+    # for event in events:
     #    event: Event
     #    print(event.en.short_name)
     #    print(event.en.banner)
     #    # read and pretty print the HTML from event.en.description
-     #   print(event.en.parsed_description.reward_image)
-     #   print(f"Event Starts: {event.en.parsed_description.start_time} | Event Ends: {event.en.parsed_description.end_time}")
+    #   print(event.en.parsed_description.reward_image)
+    #   print(f"Event Starts: {event.en.parsed_description.start_time} | Event Ends: {event.en.parsed_description.end_time}")
     #    print(event.en.parsed_description.description)
-     #   print()
+    #   print()
+
+
 asyncio.run(main())

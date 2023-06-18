@@ -3,7 +3,7 @@ import os.path
 import ambrtop_py.api_requests
 from ambrtop_py.api_requests import APIRequests
 from ambrtop_py.classes.avatar import SmallAvatar, Avatar
-from ambrtop_py.classes.misc import DailyDungeons, Event
+from ambrtop_py.classes.misc import DailyDungeons, Event, CharacterCurve
 from ambrtop_py.classes.weapon import SmallWeapon, Weapon
 
 
@@ -12,6 +12,9 @@ class AmbrAPI(APIRequests):
         super().__init__(requests_cache=f"{os.path.dirname(ambrtop_py.api_requests.__file__)}/cache", **kwargs)
 
         self.weapon_data = None
+        self.weapon_curve = None
+
+        self.character_curve = None
 
     async def get_characters(self) -> list[SmallAvatar]:
         """
@@ -22,6 +25,8 @@ class AmbrAPI(APIRequests):
         _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/avatar')
         if self.weapon_data is None:
             self.weapon_data = await self.__get_manual_weapon__()
+        if self.character_curve is None:
+            self.character_curve = await self.__get_character_curve__()
 
         return [SmallAvatar.from_dict(_req_['items'][i], self.weapon_data) for i in _req_['items']]
 
@@ -34,6 +39,8 @@ class AmbrAPI(APIRequests):
         _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/avatar')
         if self.weapon_data is None:
             self.weapon_data = await self.__get_manual_weapon__()
+        if self.character_curve is None:
+            self.character_curve = await self.__get_character_curve__()
         _reqs_ = await self.__make_request__(
             [f'{self.__base_url__}/{self.__language__}/avatar/{i}' for i in _req_['items']])
         return [Avatar.from_dict(i, self.weapon_data) for i in _reqs_]
@@ -47,6 +54,8 @@ class AmbrAPI(APIRequests):
         _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/avatar/{character_id}')
         if self.weapon_data is None:
             self.weapon_data = await self.__get_manual_weapon__()
+        if self.character_curve is None:
+            self.character_curve = await self.__get_character_curve__()
         return Avatar.from_dict(_req_, self.weapon_data)
 
     async def get_weapons(self) -> list[SmallWeapon]:
@@ -80,9 +89,10 @@ class AmbrAPI(APIRequests):
     async def get_events(self):
         """
         Get all events
+        NOTE: Does not cache to keep up to date
         :return:
         """
-        _req_ = await self.__make_request__(f'https://api.ambr.top/assets/data/event.json')
+        _req_ = await self.__make_request__(f'https://api.ambr.top/assets/data/event.json', cache=False)
         return [Event.from_dict(_req_[i]) for i in _req_]
 
     async def __get_manual_weapon__(self) -> dict:
@@ -92,6 +102,14 @@ class AmbrAPI(APIRequests):
         """
         return await self.__make_request__(f'https://api.ambr.top/v2/{self.__language__}/manualWeapon')
 
+    async def __get_character_curve__(self):
+        """
+        Get the character curve data from the static endpoint
+        :return:
+        """
+        _req_ = await self.__make_request__(f'https://api.ambr.top/v2/static/avatarCurve')
+        return [CharacterCurve.from_dict(_req_[i]) for i in _req_]
+
     async def fill_cache(self):
         """
         Fill the cache with all data initially so that subsequent requests are faster
@@ -100,5 +118,4 @@ class AmbrAPI(APIRequests):
         await self.get_full_characters()
         await self.get_full_weapons()
         await self.get_daily_dungeon()
-        await self.get_events()
         return self

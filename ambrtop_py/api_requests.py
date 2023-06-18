@@ -21,10 +21,14 @@ class APIRequests:
             self.__req_cache__.close()
             raise ValueError("Language must be one of the following: 'en', 'zh', 'ko', 'jp', 'ru', 'de'")
 
-    async def __make_request__(self, url: str | list[str]):
+    async def __make_request__(self, url: str | list[str], cache=True):
         if isinstance(url, list):
             responses = []
             for url in url:
+                if cache is not True:
+                    await self.__req_cache__.cache.delete_url(url)
+                    if self.__is_debug__:
+                        await async_print(f"{datetime.datetime.now()} DEBUG Cleared Cache for: '{url}'")
                 async with self.__req_cache__.get(url) as resp:
                     if self.__is_debug__:
                         await async_print(f"{datetime.datetime.now()} DEBUG Requesting: '{url}'")
@@ -37,6 +41,10 @@ class APIRequests:
                         responses.append(res)
             return responses
 
+        if cache is not True:
+            await self.__req_cache__.cache.delete_url(url)
+            if self.__is_debug__:
+                await async_print(f"{datetime.datetime.now()} DEBUG Cleared Cache for: '{url}'")
         async with self.__req_cache__.get(url) as resp:
             if self.__is_debug__:
                 await async_print(f"{datetime.datetime.now()} DEBUG Requesting: '{url}'")
