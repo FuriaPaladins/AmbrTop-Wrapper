@@ -1,5 +1,6 @@
 # AmbrTop-Py
-An asynchronous Python API wrapper for ambr.top
+An asynchronous Python API wrapper for ambr.top  
+*Note: This is my first ever API wrapper I've made publicly available, it may be bad/weird*
 
 ## Example
 
