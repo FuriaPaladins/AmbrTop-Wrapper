@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from ambrtop_py.classes._functions import *
+from ambrtop_py.classes.avatar import UpgradePath
 from ambrtop_py.classes.misc import AscensionItem
 
 
@@ -45,6 +46,7 @@ class Weapon(SmallWeapon):
     effect: Optional[WeaponEffect] = None
     description: Optional[str] = None
     ascension: Optional[list[AscensionItem]] = None
+    upgrade: Optional[UpgradePath] = None
 
     @staticmethod
     def from_dict(obj: Any, weapon_types: dict = None) -> 'Weapon':
@@ -60,4 +62,6 @@ class Weapon(SmallWeapon):
         description = obj.get("description", None)
         ascension = [AscensionItem(int(key), int(item)) for key, item in obj.get("ascension", []).items()] if obj.get(
             "ascension") else None
-        return Weapon(id, rarity, type, name, icon, route, story_id, effect, description, ascension)
+        upgrade = UpgradePath.from_dict(obj.get("upgrade", None), weapon_types) if obj.get("upgrade", None) else None
+
+        return Weapon(id, rarity, type, name, icon, route, story_id, effect, description, ascension, upgrade)

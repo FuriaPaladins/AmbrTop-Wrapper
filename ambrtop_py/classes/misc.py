@@ -175,17 +175,17 @@ class PromoteItem:
 
 
 @dataclass
-class CharacterCurve:
+class UpgradeCurve:
     hp_4star: Optional[int] = None
     attack_4star: Optional[int] = None
     hp_5star: Optional[int] = None
     attack_5star: Optional[int] = None
 
     @staticmethod
-    def from_dict(obj: Any) -> 'CharacterCurve':
+    def from_dict(obj: Any) -> 'UpgradeCurve':
         assert isinstance(obj, dict)
         hp_4star = obj.get("GROW_CURVE_HP_S4", None)
         attack_4star = obj.get("GROW_CURVE_ATTACK_S4", None)
         hp_5star = obj.get("GROW_CURVE_HP_S5", None)
         attack_5star = obj.get("GROW_CURVE_ATTACK_S5", None)
-        return CharacterCurve(hp_4star, attack_4star, hp_5star, attack_5star)
+        return UpgradeCurve(hp_4star, attack_4star, hp_5star, attack_5star)

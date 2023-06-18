@@ -3,7 +3,8 @@ import os.path
 import ambrtop_py.api_requests
 from ambrtop_py.api_requests import APIRequests
 from ambrtop_py.classes.avatar import SmallAvatar, Avatar
-from ambrtop_py.classes.misc import DailyDungeons, Event, CharacterCurve
+from ambrtop_py.classes.misc import DailyDungeons, Event, UpgradeCurve
+from ambrtop_py.classes.monster import SmallMonster, Monster
 from ambrtop_py.classes.weapon import SmallWeapon, Weapon
 
 
@@ -13,8 +14,8 @@ class AmbrAPI(APIRequests):
 
         self.weapon_data = None
         self.weapon_curve = None
-
         self.character_curve = None
+        self.monster_types = None
 
     async def get_characters(self) -> list[SmallAvatar]:
         """
@@ -27,7 +28,8 @@ class AmbrAPI(APIRequests):
             self.weapon_data = await self.__get_manual_weapon__()
         if self.character_curve is None:
             self.character_curve = await self.__get_character_curve__()
-
+        if self.weapon_curve is None:
+            self.weapon_curve = await self.__get_weapon_curve__()
         return [SmallAvatar.from_dict(_req_['items'][i], self.weapon_data) for i in _req_['items']]
 
     async def get_full_characters(self) -> list[Avatar]:
@@ -41,6 +43,8 @@ class AmbrAPI(APIRequests):
             self.weapon_data = await self.__get_manual_weapon__()
         if self.character_curve is None:
             self.character_curve = await self.__get_character_curve__()
+        if self.weapon_curve is None:
+            self.weapon_curve = await self.__get_weapon_curve__()
         _reqs_ = await self.__make_request__(
             [f'{self.__base_url__}/{self.__language__}/avatar/{i}' for i in _req_['items']])
         return [Avatar.from_dict(i, self.weapon_data) for i in _reqs_]
@@ -56,6 +60,8 @@ class AmbrAPI(APIRequests):
             self.weapon_data = await self.__get_manual_weapon__()
         if self.character_curve is None:
             self.character_curve = await self.__get_character_curve__()
+        if self.weapon_curve is None:
+            self.weapon_curve = await self.__get_weapon_curve__()
         return Avatar.from_dict(_req_, self.weapon_data)
 
     async def get_weapons(self) -> list[SmallWeapon]:
@@ -76,7 +82,31 @@ class AmbrAPI(APIRequests):
         _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/weapon')
         _reqs_ = await self.__make_request__(
             [f'{self.__base_url__}/{self.__language__}/weapon/{i}' for i in _req_['items']])
-        return [Weapon.from_dict(i) for i in _reqs_]
+        return [Weapon.from_dict(i, self.weapon_data) for i in _reqs_]
+
+    async def get_monsters(self):
+        """
+        Get all monsters from the monster endpoint
+        :return:
+        """
+        _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/monster')
+        if self.monster_types is None:
+            self.monster_types = _req_['types']
+
+        return [SmallMonster.from_dict(_req_['items'][i], self.monster_types) for i in _req_['items']]
+
+    async def get_full_monsters(self):
+        """
+        Get all expanded monsters from the monster endpoint
+        :return:
+        """
+        _req_ = await self.__make_request__(f'{self.__base_url__}/{self.__language__}/monster')
+        if self.monster_types is None:
+            self.monster_types = _req_['types']
+
+        _reqs_ = await self.__make_request__(
+            [f'{self.__base_url__}/{self.__language__}/monster/{i}' for i in _req_['items']])
+        return [Monster.from_dict(i, self.monster_types) for i in _reqs_]
 
     async def get_daily_dungeon(self) -> DailyDungeons:
         """
@@ -108,7 +138,15 @@ class AmbrAPI(APIRequests):
         :return:
         """
         _req_ = await self.__make_request__(f'https://api.ambr.top/v2/static/avatarCurve')
-        return [CharacterCurve.from_dict(_req_[i]) for i in _req_]
+        return [UpgradeCurve.from_dict(_req_[i]) for i in _req_]
+
+    async def __get_weapon_curve__(self):
+        """
+        Get the weapon curve data from the static endpoint
+        :return:
+        """
+        _req_ = await self.__make_request__(f'https://api.ambr.top/v2/static/weaponCurve')
+        return [UpgradeCurve.from_dict(_req_[i]) for i in _req_]
 
     async def fill_cache(self):
         """

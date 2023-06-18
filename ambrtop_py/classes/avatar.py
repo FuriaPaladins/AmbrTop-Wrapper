@@ -1,7 +1,6 @@
+import re
 from dataclasses import dataclass
 
-import re
-from ambrtop_py.api_requests import APIRequests
 from ambrtop_py.classes._functions import *
 from ambrtop_py.classes.food import SmallFood
 from ambrtop_py.classes.misc import AscensionItem, PromoteItem
@@ -285,17 +284,17 @@ class UpgradeProp:
 
 @dataclass
 class PromoteLevelProp:
-    __prop_type__: Optional[str] = None
+    type: Optional[str] = None
     name: Optional[str] = None
     value: Optional[int] = None
 
     @staticmethod
     def from_dict(obj: Any, weapon_types: dict) -> 'PromoteLevelProp':
         assert isinstance(obj, dict)
-        __prop_type__ = obj.get("propType", None)
-        name = weapon_types.get(__prop_type__, None)
+        type = obj.get("propType", None)
+        name = weapon_types.get(type, None)
         value = obj.get("value", None)
-        return PromoteLevelProp(__prop_type__, name, value)
+        return PromoteLevelProp(type, name, value)
 
 
 @dataclass
@@ -320,16 +319,16 @@ class PromoteLevel:
 
 
 @dataclass
-class AvatarUpgrade:
+class UpgradePath:
     props: Optional[list[UpgradeProp]] = None
     promote: Optional[List[PromoteLevel]] = None
 
     @staticmethod
-    def from_dict(obj: Any, weapon_types: dict) -> 'AvatarUpgrade':
+    def from_dict(obj: Any, weapon_types: dict) -> 'UpgradePath':
         assert isinstance(obj, dict)
         props = [UpgradeProp.from_dict(x, weapon_types) for x in obj.get("prop", [])]
         promote = [PromoteLevel.from_dict(x, weapon_types) for x in obj.get("promote", [])]
-        return AvatarUpgrade(props, promote)
+        return UpgradePath(props, promote)
 
 
 
@@ -340,7 +339,7 @@ class Avatar(SmallAvatar):
     ascension: Optional[List[AscensionItem]] = None
     talent: Optional[List[AvatarTalent]] = None
     constellations: Optional[List[Constellation]] = None
-    upgrade: Optional[AvatarUpgrade] = None
+    upgrade: Optional[UpgradePath] = None
 
     @staticmethod
     def from_dict(obj: Any, weapon_types: dict = None) -> 'Avatar':
@@ -365,7 +364,7 @@ class Avatar(SmallAvatar):
         constellations = [Constellation.from_dict(obj.get("constellation", [])[x]) for x in
                           obj.get("constellation", [])] if obj.get("constellation", None) else None
 
-        upgrade = AvatarUpgrade.from_dict(obj.get("upgrade", None), weapon_types) if obj.get("upgrade", None) else None
+        upgrade = UpgradePath.from_dict(obj.get("upgrade", None), weapon_types) if obj.get("upgrade", None) else None
 
         return Avatar(id, rarity, name, element, weapon_type, icon, icon_gacha, birthday, release, route, fetter, other,
                       ascension, talent, constellations, upgrade)

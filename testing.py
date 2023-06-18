@@ -18,12 +18,8 @@ async def main():
     api = AmbrAPI()
     print(f"Took {time.time() - start_time} seconds")
 
-    all_characters = await time_function(api.get_full_characters)
-    all_dungeons = await time_function(api.get_daily_dungeon)
-    all_weapons = await time_function(api.get_full_weapons)
-    events = await time_function(api.get_events)
-
-    print(all_characters[0])
+    monsters = await time_function(api.get_full_monsters)
+    print([m for m in monsters if m.tips is not None])
     await api.close()
 
     # for event in events:
